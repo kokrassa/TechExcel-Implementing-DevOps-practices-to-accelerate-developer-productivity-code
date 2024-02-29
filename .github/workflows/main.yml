@@ -1,0 +1,42 @@
+name: Load Test Trigger
+
+on:
+  workflow_dispatch
+
+env:
+  AZURE_WEBAPP_NAME: "7tlh6jh4jqcoo-dev"    # set this to your application's name
+  LOAD_TEST_RESOURCE: "load-mpp-we-kk"   # set this to your Azure Load Test resource's name
+  LOAD_TEST_RESOURCE_GROUP: "rg-mpp-we-kk" # set this to the resource group you've used for this training
+
+jobs:
+  loadTest:
+    name: Load Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub Actions 
+        uses: actions/checkout@v2
+          
+      - name: Login to Azure
+        uses: azure/login@v1
+        continue-on-error: false
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+      - name: 'Azure Load Testing'
+        uses: azure/load-testing@v1
+        with:
+          loadTestConfigFile: 'LoadTestConfig.yaml'
+          loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+          resourceGroup: ${{ env.LOAD_TEST_RESOURCE_GROUP }}
+          env: |
+            [
+              {
+              "name": "webapp",
+              "value": "${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+              }
+            ]  
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: loadTestResults
+          path: ${{ github.workspace }}/loadTest
